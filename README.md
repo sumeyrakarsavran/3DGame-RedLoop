@@ -73,11 +73,4 @@ Feel free to contribute to this project by adding new features, fixing bugs, or 
 3. Commit your changes with clear messages.
 4. Submit a pull request.
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-## Acknowledgments
-- Unity Technologies for providing the game engine.
-- Asset creators for their contributions to the Unity Asset Store.
-
 
