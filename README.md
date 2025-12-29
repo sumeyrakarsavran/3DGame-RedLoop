@@ -1,5 +1,7 @@
 # 3D Project
 
+![Picture6](https://github.com/user-attachments/assets/e0383dd6-f260-4bf2-b608-4130d704553e)
+
 ## Overview
 This project is a Unity-based 3D application designed to showcase various assets, terrains, and interactive elements. It includes a variety of 3D models, animations, and scripts to create an immersive experience. The project structure is organized to facilitate easy navigation and scalability.
 
@@ -8,7 +10,7 @@ This project is a Unity-based 3D application designed to showcase various assets
 
 The main character of the game is a brave archer girl. She must survive against enemies consisting of robots and zombies. These enemies attack the character by throwing red balls, aiming to reduce her health. At the beginning of the game, the character has 3 lives, and each hit from a red ball causes her to lose one life.
 
-![Picture6](https://github.com/user-attachments/assets/e0383dd6-f260-4bf2-b608-4130d704553e)
+<img width="524" height="304" alt="Picture1" src="https://github.com/user-attachments/assets/992ce948-477e-47b3-a472-5942dfc54575" />
 
 ![Picture5](https://github.com/user-attachments/assets/ced97127-a0c6-4eb9-8ae9-3302a866fe03)
 
@@ -22,23 +24,12 @@ The game takes place in a dark, dimly lit environment dominated by red tones. Th
 
 The next level is the Coconut Palm Tree scene. In this area, lighting and camera systems are used dynamically with various techniques. A light attached to the character acts as a flashlight, illuminating the dark surroundings. As the character moves forward, the camera rotates around her, creating a cinematic and immersive experience.
 
-![Picture3](https://github.com/user-attachments/assets/7a01dfdc-2e0e-44b6-9645-21bfaf8a7203)
+![Picture2](https://github.com/user-attachments/assets/73d6301f-2ce7-4472-bfab-68dd9782f121)
 
-<img width="752" height="428" alt="Screenshot 2025-02-23 234321" src="https://github.com/user-attachments/assets/ebda0a15-4526-479c-907d-93aa9294bfcb" />
-
-![Picture2](https://github.com/user-attachments/assets/9f681e48-3415-4526-8d10-781706138e12)
+![Picture3](https://github.com/user-attachments/assets/e5a99722-3d4d-4c1c-b584-94959269c506)
 
 
 The game continues in this manner as the player progresses through different scenes and challenges.
-
-<img width="524" height="304" alt="Picture1" src="https://github.com/user-attachments/assets/992ce948-477e-47b3-a472-5942dfc54575" />
-
-![Picture1](https://github.com/user-attachments/assets/0ebbd395-e645-4591-a363-01fbbe7c0418)
-
-
-![Picture1_1](https://github.com/user-attachments/assets/889e528f-a26d-4fb7-830d-36749a1cc51c)
-
-![Picture1_2](https://github.com/user-attachments/assets/328c9d66-c02d-4262-82c2-6939ccf81d5f)
 
 
 
@@ -89,6 +80,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - Unity Technologies for providing the game engine.
 - Asset creators for their contributions to the Unity Asset Store.
 
-![Picture2](https://github.com/user-attachments/assets/73d6301f-2ce7-4472-bfab-68dd9782f121)
 
-![Picture3](https://github.com/user-attachments/assets/e5a99722-3d4d-4c1c-b584-94959269c506)
