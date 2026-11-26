@@ -35,6 +35,7 @@ namespace RedLoop
         private RectTransform _marker;
         private Text _markerText;
         private Image _markerImage;
+        private GameObject _crosshair;
 
         // Bölüm kartı / altyazı / efektler
         private CanvasGroup _chapterGroup;
@@ -163,6 +164,22 @@ namespace RedLoop
             AddShadow(_markerText);
             _marker.gameObject.SetActive(false);
 
+            // Nişangâh (ok atmak için)
+            var ch = NewRect("Crosshair", _hud.transform);
+            Place(ch, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(40, 40));
+            var dot = NewImage("Dot", ch, new Color(1f, 0.9f, 0.7f, 0.9f), _glowSprite);
+            Place(dot.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(12, 12));
+            for (int i = 0; i < 4; i++)
+            {
+                var tick = NewImage("Tick" + i, ch, new Color(1f, 0.85f, 0.6f, 0.75f));
+                bool horiz = i < 2;
+                float sgn = (i % 2 == 0) ? 1f : -1f;
+                Place(tick.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    horiz ? new Vector2(sgn * 14f, 0f) : new Vector2(0f, sgn * 14f),
+                    horiz ? new Vector2(8, 2) : new Vector2(2, 8));
+            }
+            _crosshair = ch.gameObject;
+
             // Bölüm kartı
             var chapter = NewRect("Chapter", _root);
             Place(chapter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 160), new Vector2(1400, 220));
@@ -266,7 +283,7 @@ namespace RedLoop
 
             // Nasıl oynanır paneli
             var how = NewImage("HowTo", screen, new Color(0.05f, 0f, 0.01f, 0.95f), _panelSprite);
-            Place(how.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(1000, 520));
+            Place(how.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(1000, 640));
             how.raycastTarget = true;
             var hOut = how.gameObject.AddComponent<Outline>();
             hOut.effectColor = new Color(0.8f, 0.1f, 0.15f, 0.8f);
@@ -274,7 +291,7 @@ namespace RedLoop
             var howTitle = NewText("T", how.transform, "NASIL OYNANIR", 36, Gold, TextAnchor.UpperCenter, FontStyle.Bold);
             Place(howTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -24), new Vector2(900, 50));
             var howText = NewText("Body", how.transform, Story.HowToPlay, 28, Color.white, TextAnchor.UpperCenter);
-            Place(howText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -90), new Vector2(900, 400));
+            Place(howText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -90), new Vector2(900, 470));
             howText.lineSpacing = 1.2f;
             NewButton(how.transform, "TAMAM", () => _howToPanel.SetActive(false), new Vector2(0.5f, 0f), new Vector2(0, 50), 260);
             _howToPanel = how.gameObject;
@@ -441,6 +458,12 @@ namespace RedLoop
         private void LateUpdate()
         {
             UpdateMarker();
+            if (_crosshair != null)
+            {
+                var gmx = GameManager.Instance;
+                bool on = gmx != null && gmx.State == GameState.Playing;
+                if (_crosshair.activeSelf != on) _crosshair.SetActive(on);
+            }
             if (DialogueOpen && _dlgHint != null)
             {
                 var c = _dlgHint.color;

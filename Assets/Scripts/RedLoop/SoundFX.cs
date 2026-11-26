@@ -8,7 +8,8 @@ namespace RedLoop
     public enum Sfx
     {
         Coin, Memory, Hurt, Throw, Impact, Jump, Click, Hover, Type, Locked,
-        PortalOpen, Heartbeat, GameOver, Victory, Shatter, OrbFall, Whoosh, ClockTick
+        PortalOpen, Heartbeat, GameOver, Victory, Shatter, OrbFall, Whoosh, ClockTick,
+        Bow, ArrowHit, ArrowThunk, RobotDie, Heal, Charge, WispDie, Thunder
     }
 
     public enum MusicTrack { None, Title, Courtyard, Forest, Harbor, Ending }
@@ -396,8 +397,226 @@ namespace RedLoop
                 case Sfx.ClockTick:
                     return Build("tick", 0.12f, t =>
                         (Sin(2400f, t) + 0.5f * Sin(3600f, t)) * Mathf.Exp(-t * 60f) + Noise() * 0.2f * Mathf.Exp(-t * 120f), 0.7f);
+
+                case Sfx.Bow:
+                {
+                    // Karplus-Strong: gerilmiş yay telinin gerçekçi "tıng" sesi + okun hışırtısı
+                    int len = Mathf.RoundToInt(SR / 147f);
+                    var ks = new float[len];
+                    for (int i = 0; i < len; i++) ks[i] = Noise();
+                    int idx = 0;
+                    float y = 0f;
+                    return Build("bow", 0.6f, t =>
+                    {
+                        float s = ks[idx];
+                        int nx = (idx + 1) % len;
+                        ks[idx] = 0.5f * (ks[idx] + ks[nx]) * 0.993f;
+                        idx = nx;
+                        y += 0.25f * (Noise() - y);
+                        float whoosh = y * Mathf.Exp(-t * 14f) * 0.6f;
+                        return s * Mathf.Exp(-t * 5f) + whoosh;
+                    }, 0.75f);
+                }
+
+                case Sfx.ArrowHit:
+                {
+                    float ph = 0f;
+                    return Build("arrowhit", 0.35f, t =>
+                    {
+                        float f = 180f + 500f * Mathf.Exp(-t * 40f);
+                        ph += 2f * Mathf.PI * f / SR;
+                        float metal = 0.4f * (Sin(1830f, t) + Sin(2710f, t)) * Mathf.Exp(-t * 18f);
+                        return Mathf.Sin(ph) * Mathf.Exp(-t * 16f) + metal + Noise() * 0.5f * Mathf.Exp(-t * 50f);
+                    }, 0.8f);
+                }
+
+                case Sfx.ArrowThunk:
+                    return Build("thunk", 0.18f, t =>
+                        Sin(140f + 60f * Mathf.Exp(-t * 60f), t) * Mathf.Exp(-t * 30f) + Noise() * 0.4f * Mathf.Exp(-t * 80f), 0.7f);
+
+                case Sfx.RobotDie:
+                {
+                    float ph = 0f;
+                    return Build("robotdie", 1.3f, t =>
+                    {
+                        float f = 400f * Mathf.Exp(-t * 2.2f) + 40f;
+                        ph += 2f * Mathf.PI * f / SR;
+                        float sq = Mathf.Sin(ph) >= 0f ? 1f : -1f;
+                        float crunch = Noise() * Mathf.Exp(-t * 6f);
+                        float clank = Bell(t - 0.55f, 620f, 6f) * 0.6f + Bell(t - 0.7f, 415f, 6f) * 0.5f;
+                        return sq * 0.35f * Mathf.Exp(-t * 1.5f) + crunch * 0.6f + clank;
+                    }, 0.85f);
+                }
+
+                case Sfx.Heal:
+                {
+                    float[] notes = { 659.25f, 830.61f, 987.77f, 1318.5f };
+                    return Build("heal", 1.3f, t =>
+                    {
+                        float v = 0f;
+                        for (int i = 0; i < notes.Length; i++) v += Bell(t - i * 0.07f, notes[i], 3f);
+                        return v;
+                    }, 0.7f);
+                }
+
+                case Sfx.Charge:
+                {
+                    float ph = 0f;
+                    return Build("charge", 0.8f, t =>
+                    {
+                        float f = 120f + 380f * (t / 0.8f);
+                        ph += 2f * Mathf.PI * f / SR;
+                        float trem = 0.6f + 0.4f * Sin(18f, t);
+                        return Mathf.Sin(ph) * trem * Mathf.Min(1f, t * 6f) * (1f - t / 0.8f * 0.3f);
+                    }, 0.5f);
+                }
+
+                case Sfx.WispDie:
+                {
+                    float y = 0f, ph = 0f;
+                    return Build("wisp", 0.9f, t =>
+                    {
+                        y += 0.08f * (Noise() - y);
+                        float f = 900f * Mathf.Exp(-t * 3f) + 120f;
+                        ph += 2f * Mathf.PI * f / SR;
+                        return (y * 3f + Mathf.Sin(ph) * 0.4f) * Mathf.Exp(-t * 4f) * Mathf.Min(1f, t * 60f);
+                    }, 0.7f);
+                }
+
+                case Sfx.Thunder:
+                {
+                    float y = 0f, y2 = 0f;
+                    return Build("thunder", 4f, t =>
+                    {
+                        y += 0.04f * (Noise() - y);
+                        y2 += 0.04f * (y - y2);
+                        float crack = t < 0.25f ? Noise() * (1f - t / 0.25f) * 0.4f : 0f;
+                        float env = Mathf.Min(1f, t * 8f) * Mathf.Exp(-t * 0.9f) * (0.75f + 0.25f * Sin(3f, t));
+                        return y2 * 12f * env + crack;
+                    }, 0.9f);
+                }
             }
             return null;
+        }
+
+        // ---------------------------------------------------------------- Ortam sesleri
+
+        private AudioSource _ambience;
+        private readonly Dictionary<LevelKind, AudioClip> _ambClips = new Dictionary<LevelKind, AudioClip>();
+
+        public void PlayAmbience(LevelKind level)
+        {
+            if (_ambience == null)
+            {
+                _ambience = gameObject.AddComponent<AudioSource>();
+                _ambience.loop = true;
+                _ambience.playOnAwake = false;
+                _ambience.spatialBlend = 0f;
+            }
+            if (level == LevelKind.Unknown) { _ambience.Stop(); return; }
+            AudioClip clip;
+            if (!_ambClips.TryGetValue(level, out clip))
+            {
+                clip = BuildAmbience(level);
+                _ambClips[level] = clip;
+            }
+            if (_ambience.clip == clip && _ambience.isPlaying) return;
+            _ambience.clip = clip;
+            _ambience.volume = level == LevelKind.Harbor ? 0.45f : 0.3f;
+            _ambience.Play();
+        }
+
+        public void StopAmbience()
+        {
+            if (_ambience != null) _ambience.Stop();
+        }
+
+        private AudioClip BuildAmbience(LevelKind level)
+        {
+            int n = Mathf.RoundToInt(LoopLen * SR);
+            var buf = new float[n];
+            switch (level)
+            {
+                case LevelKind.Courtyard:
+                    AddWind(buf, 0.5f, 0.0625f);
+                    AddWind(buf, 0.25f, 0.1875f);
+                    break;
+                case LevelKind.Forest:
+                {
+                    AddWind(buf, 0.2f, 0.0625f);
+                    // cırcır böcekleri: 4.6 kHz'lik kısa cıvıltı grupları
+                    for (int g = 0; g < 26; g++)
+                    {
+                        float start = (float)_rng.NextDouble() * LoopLen;
+                        float f = 4200f + (float)_rng.NextDouble() * 900f;
+                        float amp = 0.04f + (float)_rng.NextDouble() * 0.05f;
+                        int chirps = 3 + _rng.Next(4);
+                        for (int c = 0; c < chirps; c++)
+                        {
+                            int s = Mathf.RoundToInt((start + c * 0.07f) * SR);
+                            int len = Mathf.RoundToInt(0.045f * SR);
+                            for (int j = 0; j < len; j++)
+                            {
+                                float x = j / (float)SR;
+                                float env = Mathf.Sin(Mathf.PI * j / len);
+                                buf[(s + j) % n] += amp * env * Sin(f, x) * (0.6f + 0.4f * Sin(60f, x));
+                            }
+                        }
+                    }
+                    // uzaktan baykuş
+                    AddOwl(buf, 5.5f);
+                    AddOwl(buf, 13f);
+                    break;
+                }
+                case LevelKind.Harbor:
+                {
+                    // dalgalar: 8 saniyelik nefes alan gürültü + çakıl hışırtısı
+                    float y = 0f, y2 = 0f;
+                    for (int pass = 0; pass < 2; pass++)
+                    {
+                        for (int i = 0; i < n; i++)
+                        {
+                            y += 0.03f * (Noise() - y);
+                            y2 += 0.03f * (y - y2);
+                            if (pass == 1)
+                            {
+                                float t = i / (float)SR;
+                                float sw = 0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * t / 8f);
+                                float sw2 = 0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * t / 5.333333f + 1f);
+                                buf[i] += y2 * 10f * (0.25f + 0.75f * sw * sw) + y * 0.6f * sw2 * sw2;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+
+            float peak = 0.0001f;
+            for (int i = 0; i < n; i++) peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+            float k = 0.8f / peak;
+            for (int i = 0; i < n; i++) buf[i] *= k;
+            var clip = AudioClip.Create("amb_" + level, n, 1, SR, false);
+            clip.SetData(buf, 0);
+            return clip;
+        }
+
+        private static void AddOwl(float[] buf, float start)
+        {
+            int n = buf.Length;
+            float[] at = { 0f, 0.45f, 0.62f };
+            float[] dur = { 0.35f, 0.12f, 0.5f };
+            for (int k = 0; k < at.Length; k++)
+            {
+                int s = Mathf.RoundToInt((start + at[k]) * SR);
+                int len = Mathf.RoundToInt(dur[k] * SR);
+                for (int j = 0; j < len; j++)
+                {
+                    float x = j / (float)SR;
+                    float env = Mathf.Sin(Mathf.PI * j / len);
+                    float f = 380f - 30f * (j / (float)len);
+                    buf[(s + j) % n] += 0.08f * env * (Sin(f, x) + 0.2f * Sin(f * 2f, x));
+                }
+            }
         }
 
         private static float Thump(float x)

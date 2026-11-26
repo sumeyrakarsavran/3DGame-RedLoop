@@ -51,6 +51,7 @@ namespace RedLoop
         private void Burst()
         {
             FX.PopLight(transform.position, new Color(1f, 0.2f, 0.1f), 6f, 4f, 0.4f);
+            FX.Burst(transform.position, new Color(1f, 0.25f, 0.12f), 26, 5f, 0.16f, 0.6f);
             Destroy(gameObject);
         }
 

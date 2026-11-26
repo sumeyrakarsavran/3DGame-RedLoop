@@ -35,9 +35,11 @@ namespace RedLoop
             "<b>Fare</b> — Kamera\n" +
             "<b>Space</b> — Zıpla\n" +
             "<b>Shift</b> — Koş\n" +
+            "<b>Sol tık / F</b> — Ok at (nişangâh ekranın ortasında)\n" +
             "<b>Esc</b> — Duraklat\n" +
             "<b>Space / E / Tık</b> — Diyaloğu ilerlet\n\n" +
-            "Kızıl kürelerden kaç. Üç darbe alırsan döngü seni başa sarar.\n" +
+            "Robotlar atıştan önce kızarıp uğuldar: o an yer değiştir!\n" +
+            "Üç darbe alırsan döngü seni başa sarar. Pembe kalpler can verir.\n" +
             "Ekrandaki <color=#ffd36b>sarı elmas</color> işareti seni bir sonraki hedefe götürür.";
 
         public static string ChapterNumber(LevelKind k)
@@ -72,9 +74,10 @@ namespace RedLoop
                         new Line(Narrator, "Gökyüzü yine kızıl. Rüzgâr yine aynı yönden esiyor."),
                         new Line(Ayla, "Kaçıncı kez uyandım? Yüz mü, bin mi... Artık saymıyorum."),
                         new Line(Echo, "Ayla. Beni duyabiliyor musun? Etrafındaki altın ışıltılar zaman parçaları."),
-                        new Line(Echo, "Döngü kendini onlarla bir arada tutuyor. Hepsini topla; merdivenin tepesindeki kapı ancak o zaman açılır."),
+                        new Line(Echo, "Döngü kendini onlarla bir arada tutuyor. Yeterince topla; merdivenin tepesindeki kapı ancak o zaman açılır."),
                         new Line(Ayla, "Ya muhafızlar?"),
-                        new Line(Echo, "Onlar da bir zamanlar senin gibi kaçmaya çalıştı. Kızıl kürelerinden uzak dur. Üç darbe... ve döngü seni yeniden başa sarar."),
+                        new Line(Echo, "Onlar da bir zamanlar senin gibi kaçmaya çalıştı. Atmadan önce kızarıp uğuldarlar; o an yerinde durma."),
+                        new Line(Echo, "Yayın hâlâ elinde, Ayla. İki ok bir muhafızı devirir ve onu döngüden kurtarır. Üç darbe alırsan... her şey başa döner."),
                     };
                 case LevelKind.Forest:
                     return new[]
@@ -83,6 +86,7 @@ namespace RedLoop
                         new Line(Ayla, "Burayı tanıyorum... Deniz'le saklambaç oynadığımız bahçe bu."),
                         new Line(Echo, "Bu orman senin hatıralarından yapılmış. Döngü, en çok acıtanları karanlığa gömdü."),
                         new Line(Echo, "Fenerin yolunu aydınlatacak. Dört hatıra ışığını bul; geçit ancak hatırladığında açılır."),
+                        new Line(Echo, "Dikkat et: karanlıkta mor gölgeler dolaşıyor. Korkularından doğdular. Tek ok onları dağıtır."),
                     };
                 case LevelKind.Harbor:
                     return new[]

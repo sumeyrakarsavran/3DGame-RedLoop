@@ -34,10 +34,15 @@ namespace RedLoop
         public int LevelShardsTaken { get; private set; }
         public int LevelMemoriesTotal { get; private set; }
         public int LevelMemoriesTaken { get; private set; }
+        public int LevelShardsRequired { get; private set; }
+        public float LevelPlayTime { get; private set; }
+        public int GuardiansDefeated { get; private set; }
+        public int ShadowsDefeated { get; private set; }
+        public int ArrowsShot { get; private set; }
 
         public bool ObjectivesComplete
         {
-            get { return LevelShardsTaken >= LevelShardsTotal && LevelMemoriesTaken >= LevelMemoriesTotal; }
+            get { return LevelShardsTaken >= LevelShardsRequired && LevelMemoriesTaken >= LevelMemoriesTotal; }
         }
 
         public Transform PlayerTransform { get { return _player; } }
@@ -163,6 +168,16 @@ namespace RedLoop
             _director.Init(this, Level, _player, _portal, _collectibles);
 
             CountCollectibles();
+            // Kızıl Avlu: kapı için parçaların %60'ı yeterli (geri kalanı bonus puan)
+            LevelShardsRequired = Level == LevelKind.Courtyard ? Mathf.CeilToInt(LevelShardsTotal * 0.6f) : 0;
+            LevelPlayTime = 0f;
+
+            // Yay, bloom, atmosfer, ortam sesi
+            if (pgo != null && pgo.GetComponent<PlayerBow>() == null) pgo.AddComponent<PlayerBow>();
+            var cam = Camera.main;
+            if (cam != null && cam.GetComponent<RedLoopBloom>() == null) cam.gameObject.AddComponent<RedLoopBloom>();
+            Atmosphere.Setup(Level, _player, dgo.transform);
+            _sfx.PlayAmbience(Level);
             Lives = MaxLives;
             LevelShardsTaken = 0;
             LevelMemoriesTaken = 0;
@@ -194,6 +209,7 @@ namespace RedLoop
                 if (t == null) continue;
                 var c = t.GetComponent<Collectible>();
                 if (c != null && c.kind == CollectibleKind.Memory) memories++;
+                else if (c != null && c.kind == CollectibleKind.Heart) continue;
                 else shards++;
             }
             LevelShardsTotal = shards;
@@ -349,6 +365,7 @@ namespace RedLoop
             if (State != GameState.Playing) return;
 
             PlayTime += Time.unscaledDeltaTime;
+            LevelPlayTime += Time.deltaTime;
 
             if (_player != null)
             {
@@ -409,6 +426,21 @@ namespace RedLoop
 
             var c = go.GetComponent<Collectible>();
             bool memory = c != null && c.kind == CollectibleKind.Memory;
+            if (c != null && c.kind == CollectibleKind.Heart)
+            {
+                _collectibles.Remove(go.transform);
+                Vector3 hp = go.transform.position;
+                Destroy(go);
+                FX.Burst(hp, new Color(1f, 0.3f, 0.45f), 24, 3f, 0.15f, 0.7f);
+                _sfx.Play(Sfx.Heal, 0.85f);
+                if (Lives < MaxLives)
+                {
+                    Lives++;
+                    _ui.SetLives(Lives);
+                    _ui.ShowSubtitle(new Line(Story.Ayla, "Bir nefes daha... Devam edebilirim."));
+                }
+                return;
+            }
             Vector3 pos = go.transform.position;
             _collectibles.Remove(go.transform);
 
@@ -418,6 +450,7 @@ namespace RedLoop
                 LevelMemoriesTaken++;
                 _sfx.Play(Sfx.Memory, 0.9f);
                 FX.PopLight(pos, new Color(0.7f, 0.88f, 1f), 9f, 6f);
+                FX.Burst(pos, new Color(0.7f, 0.88f, 1f), 40, 3f, 0.15f, 1.1f);
                 int idx = Mathf.Clamp(LevelMemoriesTaken - 1, 0, Story.Memories.Length - 1);
                 _ui.ShowSubtitle(Story.Memories[idx]);
             }
@@ -427,8 +460,9 @@ namespace RedLoop
                 LevelShardsTaken++;
                 _sfx.Play(Sfx.Coin, 0.8f, 1f + 0.04f * LevelShardsTaken);
                 FX.PopLight(pos, new Color(1f, 0.82f, 0.4f), 6f, 5f);
+                FX.Burst(pos, new Color(1f, 0.8f, 0.35f), 22, 3.5f, 0.12f, 0.6f);
                 Line l;
-                if (Story.ShardLine(LevelShardsTaken, LevelShardsTotal, out l)) _ui.ShowSubtitle(l);
+                if (LevelShardsRequired > 0 && Story.ShardLine(LevelShardsTaken, LevelShardsRequired, out l)) _ui.ShowSubtitle(l);
             }
 
             RefreshCounter();
@@ -448,7 +482,7 @@ namespace RedLoop
         private void RefreshCounter()
         {
             if (LevelMemoriesTotal > 0) _ui.SetShards(LevelMemoriesTaken, LevelMemoriesTotal, true);
-            else _ui.SetShards(LevelShardsTaken, LevelShardsTotal, false);
+            else _ui.SetShards(LevelShardsTaken, LevelShardsRequired > 0 ? LevelShardsRequired : LevelShardsTotal, false);
         }
 
         public void TryUsePortal(LoadScene portal)
@@ -465,7 +499,7 @@ namespace RedLoop
                 _sfx.Play(Sfx.Locked, 0.7f);
                 int remaining = LevelMemoriesTotal > 0
                     ? LevelMemoriesTotal - LevelMemoriesTaken
-                    : LevelShardsTotal - LevelShardsTaken;
+                    : LevelShardsRequired - LevelShardsTaken;
                 _ui.ShowSubtitle(new Line(Story.Narrator, Story.PortalLocked(Level, remaining)));
             }
         }
@@ -490,7 +524,7 @@ namespace RedLoop
         {
             if (State != GameState.Playing) return false;
             if (Time.time < _invulnUntil) return false;
-            _invulnUntil = Time.time + 1.4f;
+            _invulnUntil = Time.time + 2f;
 
             Lives = Mathf.Max(0, Lives - 1);
             _sfx.Play(Sfx.Hurt, 0.9f);
@@ -649,6 +683,7 @@ namespace RedLoop
             string stats =
                 "Toplanan zaman parçası: <b>" + ShardsCollected + "</b>\n" +
                 "Bulunan hatıra: <b>" + MemoriesCollected + " / " + Story.Memories.Length + "</b>\n" +
+                "Devrilen muhafız: <b>" + GuardiansDefeated + "</b>   Dağıtılan gölge: <b>" + ShadowsDefeated + "</b>\n" +
                 "Yaşanan döngü: <b>" + (Deaths + 1) + "</b>\n" +
                 "Süre: <b>" + FormatTime(PlayTime) + "</b>" + (newBest ? "  <color=#ffe08a>(yeni rekor!)</color>" : "  (rekor " + FormatTime(best) + ")");
 
@@ -660,6 +695,24 @@ namespace RedLoop
         {
             int s = Mathf.FloorToInt(seconds);
             return (s / 60).ToString("00") + ":" + (s % 60).ToString("00");
+        }
+
+        // ================================================================ Savaş
+
+        public void OnArrowShot() { ArrowsShot++; }
+
+        public void OnShadowDefeated() { ShadowsDefeated++; }
+
+        public void OnGuardianDefeated(Vector3 position)
+        {
+            GuardiansDefeated++;
+            if (GuardiansDefeated == 1) _ui.ShowSubtitle(new Line(Story.Echo, "Bir muhafız daha özgür. Döngü onları da bırakıyor."));
+            // %45 ihtimalle can kalbi bırakır
+            if (Random.value < 0.45f)
+            {
+                var heart = FX.HeartPickup(position + Vector3.up * 1f);
+                RegisterCollectible(heart.transform);
+            }
         }
 
         // ================================================================ Hedef işaretçisi
@@ -683,6 +736,8 @@ namespace RedLoop
                 {
                     var col = t.GetComponent<Collider>();
                     if (col != null && !col.enabled) continue;
+                    var kind = t.GetComponent<Collectible>();
+                    if (kind != null && kind.kind == CollectibleKind.Heart) continue;
                     float d = (t.position - from).sqrMagnitude;
                     if (d < best) { best = d; position = t.position; found = true; }
                 }
