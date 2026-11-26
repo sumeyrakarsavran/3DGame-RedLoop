@@ -22,6 +22,14 @@ The finale reveals who started the loop and why — and the clock finally moves 
 - 3 hearts per chapter; falling off the map costs a heart and respawns you. Losing all hearts restarts the chapter ("Döngü #N").
 - The yellow diamond on screen always points to your next objective.
 
+### Play in the browser (no Unity Editor needed)
+`.github/workflows/webgl.yml` builds the game in the cloud with [GameCI](https://game.ci) on every push and publishes the `main` build to GitHub Pages.
+One-time setup:
+1. Install **Unity Hub** (not the editor), sign in, *Preferences > Licenses > Add > Get a free personal license*. Copy the contents of `C:\ProgramData\Unity\Unity_lic.ulf`, then sign out of the Hub.
+2. Repo *Settings > Secrets and variables > Actions*: add `UNITY_LICENSE` (the .ulf contents), `UNITY_EMAIL`, `UNITY_PASSWORD`.
+3. Repo *Settings > Pages > Source*: **GitHub Actions**.
+4. Run the workflow from the *Actions* tab. The game appears at `https://<user>.github.io/3DGame-RedLoop/`.
+
 ### What was added / fixed (2026 update)
 - **Game flow:** title screen with prologue, intro dialogues per chapter, chapter title cards, pause menu (resume / restart / mute / main menu / quit), game over screen with retry, and a real **ending screen** with stats and best time.
 - **Story:** full Turkish narrative with typewriter dialogue and subtitles (`Assets/Scripts/RedLoop/Story.cs` — edit texts there).
