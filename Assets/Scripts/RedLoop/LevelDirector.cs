@@ -16,6 +16,26 @@ namespace RedLoop
 
         public Transform GoalTransform { get; private set; }
 
+        // Son bölümde kazanma noktaları: kalbin konduğu yer ve orijinal sahnedeki hedef (oda).
+        public readonly List<Vector3> WinPoints = new List<Vector3>();
+        public const float WinHorizontal = 5f;
+        public const float WinVertical = 6f;
+
+        public bool IsInWinZone(Vector3 p)
+        {
+            if (GoalTransform != null && Check(GoalTransform.position, p)) return true;
+            foreach (var w in WinPoints) if (Check(w, p)) return true;
+            return false;
+        }
+
+        private static bool Check(Vector3 w, Vector3 p)
+        {
+            Vector3 d = p - w;
+            float dy = Mathf.Abs(d.y);
+            d.y = 0f;
+            return d.magnitude <= WinHorizontal && dy <= WinVertical;
+        }
+
         private GameManager _gm;
         private LevelKind _level;
         private Transform _player;
@@ -71,10 +91,85 @@ namespace RedLoop
                     break;
 
                 case LevelKind.Harbor:
+                    BuildRuntimeNavMesh();
                     SetupHarbor();
-                    SpawnBonusShardsOnGround(collectibles, 8, 4f, 18f);
+                    SpawnBonusShardsOnNavMesh(collectibles, 8);
                     break;
             }
+        }
+
+        // ---------------------------------------------------------------- Çalışma anı NavMesh (Eski Liman)
+
+        private NavMeshDataInstance _navInstance;
+        private bool _hasNav;
+
+        // Limanda hazır NavMesh yok. Fizik collider'larından oyun anında yürünebilir alan haritası çıkarıyoruz;
+        // böylece hedefin ve parçaların oyuncunun gerçekten yürüyerek ulaşabileceği yerde olduğunu doğrulayabiliyoruz.
+        private void BuildRuntimeNavMesh()
+        {
+            if (_player == null) return;
+            NavMeshHit existing;
+            if (NavMesh.SamplePosition(_player.position, out existing, 3f, NavMesh.AllAreas)) return; // zaten var
+
+            var settings = NavMesh.GetSettingsByID(0);
+            settings.agentRadius = 0.35f;
+            settings.agentHeight = 1.8f;
+            settings.agentClimb = 0.45f;
+            settings.agentSlope = 45f;
+
+            var center = _player.position;
+            var killer = GameObject.Find("killer");
+            if (killer != null) center = (center + killer.transform.position) * 0.5f;
+            var bounds = new Bounds(center, new Vector3(220f, 80f, 220f));
+
+            var sources = new List<NavMeshBuildSource>();
+            int mask = ~(1 << PlayerLayer);
+            NavMeshBuilder.CollectSources(bounds, mask, NavMeshCollectGeometry.PhysicsColliders, 0, new List<NavMeshBuildMarkup>(), sources);
+            // tetikleyicileri (görünmez alanlar) dışarıda bırak
+            sources.RemoveAll(s => s.component is Collider && ((Collider)s.component).isTrigger);
+            if (sources.Count == 0) return;
+
+            var data = NavMeshBuilder.BuildNavMeshData(settings, sources, bounds, Vector3.zero, Quaternion.identity);
+            if (data == null) return;
+            _navInstance = NavMesh.AddNavMeshData(data);
+            _hasNav = _navInstance.valid;
+        }
+
+        private void OnDestroy()
+        {
+            if (_hasNav) _navInstance.Remove();
+        }
+
+        // İstenen noktaya en yakın, oyuncunun yürüyerek varabildiği nokta.
+        private bool FindReachablePoint(Vector3 desired, out Vector3 result)
+        {
+            result = desired;
+            if (_player == null) return false;
+            NavMeshHit start;
+            if (!NavMesh.SamplePosition(_player.position, out start, 4f, NavMesh.AllAreas)) return false;
+
+            var path = new NavMeshPath();
+            bool found = false;
+            float best = float.MaxValue;
+            const float step = 3f;
+            const int half = 10; // ±30 m
+            for (int x = -half; x <= half; x++)
+            {
+                for (int z = -half; z <= half; z++)
+                {
+                    Vector3 probe = desired + new Vector3(x * step, 0f, z * step);
+                    NavMeshHit h;
+                    if (!NavMesh.SamplePosition(probe, out h, 14f, NavMesh.AllAreas)) continue;
+                    float score = (h.position - desired).sqrMagnitude;
+                    if (score >= best) continue;
+                    if (!NavMesh.CalculatePath(start.position, h.position, NavMesh.AllAreas, path)) continue;
+                    if (path.status != NavMeshPathStatus.PathComplete) continue;
+                    best = score;
+                    result = h.position;
+                    found = true;
+                }
+            }
+            return found;
         }
 
         public void OnPlayStarted()
@@ -343,37 +438,44 @@ namespace RedLoop
         private void SetupHarbor()
         {
             var killer = GameObject.Find("killer");
-            Vector3 goalPos;
+            Vector3 desired;
             if (killer != null)
             {
                 // Eski "You Win" yazısı yerine artık gerçek final var
                 for (int i = 0; i < killer.transform.childCount; i++)
                     killer.transform.GetChild(i).gameObject.SetActive(false);
-
-                var sc = killer.GetComponent<SphereCollider>();
-                if (sc == null) sc = killer.AddComponent<SphereCollider>();
-                sc.isTrigger = true;
-                sc.radius = Mathf.Max(sc.radius, 1.5f);
-                if (killer.GetComponent<FinalGoal>() == null) killer.AddComponent<FinalGoal>();
-                GoalTransform = killer.transform;
-                goalPos = killer.transform.position;
+                // Orijinal nokta havada asılı ve ulaşılamıyordu: artık sadece "istenen yer" olarak kullanılıyor
+                var oldCol = killer.GetComponent<Collider>();
+                if (oldCol != null) oldCol.enabled = false;
+                desired = killer.transform.position;
+                WinPoints.Add(desired);
             }
             else
             {
                 Vector3 origin = _player != null ? _player.position : Vector3.zero;
                 Vector3 fwd = _player != null ? _player.forward : Vector3.forward;
-                goalPos = origin + fwd * 25f;
-                RaycastHit hit;
-                if (Physics.Raycast(goalPos + Vector3.up * 40f, Vector3.down, out hit, 90f, ~0, QueryTriggerInteraction.Ignore))
-                    goalPos = hit.point + Vector3.up;
-                var g = new GameObject("DongununKalbi_Hedef");
-                g.transform.position = goalPos;
-                var sc = g.AddComponent<SphereCollider>();
-                sc.isTrigger = true;
-                sc.radius = 2f;
-                g.AddComponent<FinalGoal>();
-                GoalTransform = g.transform;
+                desired = origin + fwd * 25f;
             }
+
+            Vector3 goalPos;
+            if (!FindReachablePoint(desired, out goalPos))
+            {
+                // NavMesh kurulamadıysa: istenen yerin altındaki zemin
+                goalPos = desired;
+                RaycastHit hit;
+                if (Physics.Raycast(desired + Vector3.up * 2f, Vector3.down, out hit, 60f, ~(1 << PlayerLayer), QueryTriggerInteraction.Ignore))
+                    goalPos = hit.point;
+            }
+            goalPos += Vector3.up * 0.2f;
+
+            var g = new GameObject("DongununKalbi_Hedef");
+            g.transform.SetParent(transform, false);
+            g.transform.position = goalPos;
+            var sc = g.AddComponent<SphereCollider>();
+            sc.isTrigger = true;
+            sc.radius = 2.2f;
+            g.AddComponent<FinalGoal>();
+            GoalTransform = g.transform;
 
             _heartVisual = FX.Primitive(PrimitiveType.Sphere, "DongununKalbi", goalPos + Vector3.up * 1.8f, Vector3.one * 1.1f);
             FX.Glow(_heartVisual.GetComponent<Renderer>(), new Color(1f, 0.05f, 0.08f), 6f);
@@ -420,6 +522,69 @@ namespace RedLoop
 
             _heart = gameObject.AddComponent<LoopHeart>();
             _heart.Init(_gm, _player, _heartVisual.transform, light);
+
+            Debug.Log("[RedLoop] Liman hedefi: istenen=" + desired + " konulan=" + goalPos +
+                      " oyuncu=" + (_player != null ? _player.position.ToString() : "-") + " navmesh=" + _hasNav);
+        }
+
+        // Güvence: oyuncu belli bir süre kalbe ulaşamazsa kalp gökten oyuncunun yakınına iner.
+        private bool _descending;
+
+        public void DescendToPlayer()
+        {
+            if (_descending || _player == null || GoalTransform == null || _heartVisual == null) return;
+            _descending = true;
+            StartCoroutine(DescendRoutine());
+        }
+
+        private System.Collections.IEnumerator DescendRoutine()
+        {
+            // oyuncunun baktığı yönde, oyuncuyla aynı yükseklikte bir zemin bul
+            Vector3 target = _player.position;
+            int mask = ~(1 << PlayerLayer);
+            Vector3 fwd = _player.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
+            fwd.Normalize();
+            float[] dists = { 7f, 5f, 9f, 4f, 3f };
+            foreach (var d in dists)
+            {
+                for (int a = 0; a < 8; a++)
+                {
+                    Vector3 dir = Quaternion.Euler(0f, a * 45f, 0f) * fwd;
+                    Vector3 probe = _player.position + dir * d + Vector3.up * 1.5f;
+                    RaycastHit hit;
+                    if (Physics.Raycast(_player.position + Vector3.up * 1.2f, dir, d, mask, QueryTriggerInteraction.Ignore)) continue; // arada duvar var
+                    if (Physics.Raycast(probe, Vector3.down, out hit, 4f, mask, QueryTriggerInteraction.Ignore) &&
+                        hit.normal.y > 0.7f && Mathf.Abs(hit.point.y - _player.position.y) < 1.2f)
+                    {
+                        target = hit.point;
+                        goto Found;
+                    }
+                }
+            }
+            Found:
+
+            if (SoundFX.Instance != null) SoundFX.Instance.Play(Sfx.PortalOpen, 0.8f, 0.7f);
+            if (_gm != null) _gm.Say(new Line(Story.Echo, "Kalp seni hissetti... Sana geliyor! Ona dokun, Ayla!"));
+
+            Vector3 from = _heartVisual.transform.position;
+            Vector3 to = target + Vector3.up * 1.8f;
+            float t = 0f;
+            while (t < 3f)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.SmoothStep(0f, 1f, t / 3f);
+                Vector3 p = Vector3.Lerp(from, to, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 6f;
+                if (_heartVisual != null) _heartVisual.transform.position = p;
+                yield return null;
+            }
+
+            GoalTransform.position = target + Vector3.up * 0.2f;
+            if (_heartBeam != null) _heartBeam.transform.position = target + Vector3.up * 35f;
+            FX.Burst(to, new Color(1f, 0.2f, 0.15f), 60, 8f, 0.25f, 1.2f);
+            if (SoundFX.Instance != null) SoundFX.Instance.PlayAt(Sfx.Impact, target, 1f, 0.6f);
+            Debug.Log("[RedLoop] Kalp oyuncunun yanına indi: " + target);
         }
     }
 }

@@ -93,7 +93,7 @@ namespace RedLoop
                     {
                         new Line(Narrator, "Eski liman. Dalgalar kızıl ışığı kıyıya taşıyor."),
                         new Line(Ayla, "Söz verdiğimiz yer... Güneşin doğuşunu buradan izleyecektik. Ama güneş hiç doğmadı."),
-                        new Line(Echo, "Döngünün Kalbi en yüksek çatıda atıyor. Kızıl ışık sütununu takip et."),
+                        new Line(Echo, "Döngünün Kalbi limanın derinlerinde atıyor. Kızıl ışık sütununu takip et."),
                         new Line(Echo, "Kalp seni hissettiğinde gökten kızıl küreler yağdıracak. Yerdeki kızıl halkalara dikkat et ve durma."),
                         new Line(Ayla, "Deniz... Bu sefer geliyorum."),
                     };
@@ -120,7 +120,7 @@ namespace RedLoop
             new Line(Deniz, "\"Abla, güneş doğunca limana gidelim mi? Söz mü?\""),
             new Line(Memory, "Saat 03:33. Sirenler çaldı ve gökyüzü bir anda kızıla boyandı."),
             new Line(Ayla, "Kalabalıkta Deniz'in elini bıraktım. Sadece bir anlığına..."),
-            new Line(Deniz, "\"Beni limanda, en yüksek çatıda bekle abla. Ben korkmayacağım.\""),
+            new Line(Deniz, "\"Beni limanda, kızıl ışığın yandığı yerde bekle abla. Ben korkmayacağım.\""),
         };
 
         public static Line PortalOpened(LevelKind k)

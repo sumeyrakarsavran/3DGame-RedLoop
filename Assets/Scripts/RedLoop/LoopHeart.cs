@@ -18,6 +18,7 @@ namespace RedLoop
         private float _beatPhase;
         private bool _stopped;
         private bool _toldNear;
+        private bool _descendRequested;
         private bool _active;
         private readonly List<GameObject> _orbs = new List<GameObject>();
 
@@ -64,6 +65,14 @@ namespace RedLoop
             {
                 _toldNear = true;
                 _gm.Say(Story.NearHeart);
+            }
+
+            // Güvence: 75 saniyede ulaşılamadıysa kalp oyuncuya iner (oyun her durumda bitebilsin)
+            if (!_descendRequested && _gm.LevelPlayTime > 75f && dist > 3f)
+            {
+                _descendRequested = true;
+                var director = GetComponent<LevelDirector>();
+                if (director != null) director.DescendToPlayer();
             }
 
             _timer -= Time.deltaTime;

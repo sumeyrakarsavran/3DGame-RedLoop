@@ -12,7 +12,6 @@ namespace RedLoop
                 case LevelKind.Courtyard:
                     Fog(new Color(0.22f, 0.03f, 0.04f), 0.012f);
                     Embers(player, parent);
-                    Dust(player, parent, new Color(1f, 0.45f, 0.35f, 0.35f));
                     break;
                 case LevelKind.Forest:
                     Fog(new Color(0.03f, 0.05f, 0.08f), 0.028f);
@@ -54,32 +53,32 @@ namespace RedLoop
             return ps;
         }
 
-        // Kızıl Avlu: yerden yükselen közler
+        // Kızıl Avlu: havada yavaşça süzülen seyrek közler (yerden fışkırmaz)
         private static void Embers(Transform player, Transform parent)
         {
-            var ps = Make("Kozler", player, parent, new Vector3(0f, -0.5f, 0f));
+            var ps = Make("Kozler", player, parent, new Vector3(0f, 3f, 0f));
             var main = ps.main;
-            main.duration = 5f;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(3f, 6f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 1.2f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.12f);
-            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.35f, 0.1f), new Color(1f, 0.7f, 0.25f));
-            main.gravityModifier = -0.05f;
-            main.maxParticles = 300;
+            main.duration = 6f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(4f, 7f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.025f, 0.06f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.4f, 0.15f, 0.8f), new Color(1f, 0.6f, 0.25f, 0.8f));
+            main.gravityModifier = -0.01f;
+            main.maxParticles = 90;
             var em = ps.emission;
-            em.rateOverTime = 45f;
+            em.rateOverTime = 12f;
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(36f, 1f, 36f);
+            shape.scale = new Vector3(30f, 4f, 30f);
             var noise = ps.noise;
             noise.enabled = true;
-            noise.strength = 0.6f;
-            noise.frequency = 0.4f;
+            noise.strength = 0.35f;
+            noise.frequency = 0.3f;
             var col = ps.colorOverLifetime;
             col.enabled = true;
             col.color = FX.FadeGradient(Color.white);
             var r = ps.GetComponent<ParticleSystemRenderer>();
-            r.material = FX.AdditiveMaterial(Color.white, 2.5f);
+            r.material = FX.AdditiveMaterial(Color.white, 1.4f);
             ps.Play();
         }
 

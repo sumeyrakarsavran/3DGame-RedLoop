@@ -7,9 +7,9 @@ namespace RedLoop
     [RequireComponent(typeof(Camera))]
     public class RedLoopBloom : MonoBehaviour
     {
-        public float threshold = 0.9f;
-        public float intensity = 0.7f;
-        public float vignette = 0.3f;
+        public float threshold = 1.0f;
+        public float intensity = 0.5f;
+        public float vignette = 0.12f;
 
         private Material _mat;
         private readonly RenderTexture[] _rts = new RenderTexture[6];
@@ -44,6 +44,10 @@ namespace RedLoop
             int h = Mathf.Max(4, src.height / 2);
             int count = 0;
 
+            // Önceki karenin _BloomTex bağlantısını temizle: geçici dokular tekrar kullanıldığı için
+            // aynı doku hem okunup hem yazılıyordu (ekranda kare kare siyah bozulmalar).
+            _mat.SetTexture("_BloomTex", Texture2D.blackTexture);
+
             var cur = RenderTexture.GetTemporary(w, h, 0, fmt);
             Graphics.Blit(src, cur, _mat, 0);
             _rts[count++] = cur;
@@ -67,6 +71,7 @@ namespace RedLoop
 
             _mat.SetTexture("_BloomTex", cur);
             Graphics.Blit(src, dst, _mat, 3);
+            _mat.SetTexture("_BloomTex", Texture2D.blackTexture);
 
             for (int i = 0; i < count; i++)
             {

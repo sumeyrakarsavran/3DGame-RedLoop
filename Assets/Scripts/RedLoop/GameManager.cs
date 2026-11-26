@@ -140,6 +140,17 @@ namespace RedLoop
             Level = DetectLevel(scene);
 
             var pgo = GameObject.FindGameObjectWithTag("Player");
+            if (pgo == null)
+            {
+                // Eski Liman sahnesinde karakterin "Player" etiketi eksikti: hedefler, düşmanlar ve toplanabilirler
+                // oyuncuyu tanıyamıyordu. Karakteri kontrolcüsünden bulup etiketi oyun anında düzeltiyoruz.
+                var tpcFound = FindObjectOfType<ThirdPersonController>();
+                if (tpcFound != null)
+                {
+                    pgo = tpcFound.gameObject;
+                    pgo.tag = "Player";
+                }
+            }
             _player = pgo != null ? pgo.transform : null;
             _cc = pgo != null ? pgo.GetComponent<CharacterController>() : null;
             _tpc = pgo != null ? pgo.GetComponent<ThirdPersonController>() : null;
@@ -369,6 +380,13 @@ namespace RedLoop
 
             if (_player != null)
             {
+                // Son bölüm: kalbin odasına girince oyun biter (tetikleyiciye değil mesafeye bakar)
+                if (Level == LevelKind.Harbor && _director != null && _director.IsInWinZone(_player.position))
+                {
+                    ReachFinalGoal();
+                    return;
+                }
+
                 // Haritadan düşme
                 if (_player.position.y < _spawnPos.y - 30f) Fell();
 

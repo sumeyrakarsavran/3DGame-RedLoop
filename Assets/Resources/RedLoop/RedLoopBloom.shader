@@ -17,41 +17,50 @@ Shader "Hidden/RedLoop/Bloom"
     float _Intensity;
     float _Vignette;
 
-    half3 Box(float2 uv, float d)
+    // Geçersiz (NaN / negatif / aşırı büyük) renkleri temizler.
+    // Temizlenmezse tek bir bozuk piksel küçültme adımlarında büyüyüp ekranda kare kare siyah lekelere dönüşür.
+    float3 Safe(float3 v)
+    {
+        v = (v >= 0.0) ? v : 0.0;   // NaN karşılaştırması her zaman false döner → 0
+        return min(v, 16.0);
+    }
+
+    float3 Box(float2 uv, float d)
     {
         float4 o = _MainTex_TexelSize.xyxy * float2(-d, d).xxyy;
-        half3 s = tex2D(_MainTex, uv + o.xy).rgb + tex2D(_MainTex, uv + o.zy).rgb +
-                  tex2D(_MainTex, uv + o.xw).rgb + tex2D(_MainTex, uv + o.zw).rgb;
+        float3 s = Safe(tex2D(_MainTex, uv + o.xy).rgb) + Safe(tex2D(_MainTex, uv + o.zy).rgb) +
+                   Safe(tex2D(_MainTex, uv + o.xw).rgb) + Safe(tex2D(_MainTex, uv + o.zw).rgb);
         return s * 0.25;
     }
 
-    half4 FragPrefilter(v2f_img i) : SV_Target
+    float4 FragPrefilter(v2f_img i) : SV_Target
     {
-        half3 c = Box(i.uv, 1.0);
-        half br = max(c.r, max(c.g, c.b));
-        half knee = 0.5;
-        half soft = clamp(br - _Threshold + knee, 0.0, 2.0 * knee);
+        float3 c = Box(i.uv, 1.0);
+        float br = max(c.r, max(c.g, c.b));
+        float knee = 0.5;
+        float soft = clamp(br - _Threshold + knee, 0.0, 2.0 * knee);
         soft = soft * soft / (4.0 * knee + 1e-4);
-        half contrib = max(soft, br - _Threshold) / max(br, 1e-4);
-        return half4(c * contrib, 1.0);
+        float contrib = max(soft, br - _Threshold) / max(br, 1e-4);
+        return float4(Safe(c * contrib), 1.0);
     }
 
-    half4 FragDown(v2f_img i) : SV_Target
+    float4 FragDown(v2f_img i) : SV_Target
     {
-        return half4(Box(i.uv, 1.0), 1.0);
+        return float4(Box(i.uv, 1.0), 1.0);
     }
 
-    half4 FragUp(v2f_img i) : SV_Target
+    float4 FragUp(v2f_img i) : SV_Target
     {
-        return half4(Box(i.uv, 0.5), 1.0);
+        return float4(Box(i.uv, 0.5), 1.0);
     }
 
-    half4 FragFinal(v2f_img i) : SV_Target
+    float4 FragFinal(v2f_img i) : SV_Target
     {
-        half4 c = tex2D(_MainTex, i.uv);
-        c.rgb += tex2D(_BloomTex, i.uv).rgb * _Intensity;
+        float4 c = tex2D(_MainTex, i.uv);
+        c.rgb = Safe(c.rgb);
+        c.rgb += Safe(tex2D(_BloomTex, i.uv).rgb) * _Intensity;
         float2 d = i.uv - 0.5;
-        half v = 1.0 - dot(d, d) * _Vignette * 2.2;
+        float v = 1.0 - dot(d, d) * _Vignette * 2.2;
         c.rgb *= saturate(v);
         return c;
     }
