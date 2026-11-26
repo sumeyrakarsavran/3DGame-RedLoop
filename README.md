@@ -5,6 +5,37 @@
 ## Overview
 This project is a Unity-based 3D application designed to showcase various assets, terrains, and interactive elements. It includes a variety of 3D models, animations, and scripts to create an immersive experience. The project structure is organized to facilitate easy navigation and scalability.
 
+## RED LOOP — Kızıl Döngü (story)
+The city clock stopped at **03:33** and the same red night has repeated ever since: the **Red Loop**. Those who gave in became rusty guardians. **Ayla**, an archer, wakes up in the same courtyard every time she falls. Tonight, a mysterious voice — **the Echo** — tells her the loop can be broken.
+
+| Chapter | Scene | Goal |
+|---|---|---|
+| I — Kızıl Avlu | `robot` | Collect every time shard while dodging the guardians' red orbs. The door at the top of the stairs opens only when all shards are collected. |
+| II — Yankılar Ormanı | `kk` | Find 4 memory lights in the dark palm forest. Each one reveals a piece of what happened to Ayla's little brother **Deniz**. |
+| III — Eski Liman | `Old Sea Port/Dock Thing` | Follow the red light beam to **the Heart of the Loop** on the highest roof while it rains red orbs on you. |
+
+The finale reveals who started the loop and why — and the clock finally moves to 03:34.
+
+### How to play
+- **WASD / arrows** move, **mouse** camera, **Space** jump, **Shift** sprint, **Esc / P** pause
+- **Space / E / click** advances dialogue
+- 3 hearts per chapter; falling off the map costs a heart and respawns you. Losing all hearts restarts the chapter ("Döngü #N").
+- The yellow diamond on screen always points to your next objective.
+
+### What was added / fixed (2026 update)
+- **Game flow:** title screen with prologue, intro dialogues per chapter, chapter title cards, pause menu (resume / restart / mute / main menu / quit), game over screen with retry, and a real **ending screen** with stats and best time.
+- **Story:** full Turkish narrative with typewriter dialogue and subtitles (`Assets/Scripts/RedLoop/Story.cs` — edit texts there).
+- **Sound:** every sound effect and the music for each chapter is synthesized at runtime (`SoundFX.cs`): shard pickup, memory chime, hurt, enemy throw, impact, jump, UI clicks, door locked/opened, heartbeat at low health, game over, victory, heart shatter, falling orb whistle, plus 5 seamless music loops.
+- **Fixes:**
+  - `RuntimeMovement.cs` used `UnityEditor.Animations` → builds failed. Removed (also removed the per-frame `Debug.Log`).
+  - Damage code in `Collide.cs` was commented out, so enemies could never hurt the player. Restored with invulnerability frames.
+  - `CoinCollection` threw `NullReferenceException` in scenes 2 and 3 (no text assigned) and could double-count a coin.
+  - One robot had no player reference → `NullReferenceException` when chasing. Robots now find the player by tag, don't spam NavMesh errors, don't tilt when looking at the player, and stop attacking during menus/dialogue.
+  - Each robot's projectile template is a gravity rigidbody child that fell out of its hand at start and rolled around hurting the player. It is now hidden and only clones are thrown; thrown orbs are cleaned up.
+  - The last scene had no ending (only a "You Win" text that disappeared when you walked away) and `LoadScene` would try to load a non-existent scene. Now there's a proper finale.
+  - Doors no longer open before the chapter goal is done, and also trigger if you are already standing inside when the last shard is collected.
+- Everything new is created at runtime by `GameManager` (auto-bootstrapped), so **scenes, the character and the red atmosphere are unchanged**.
+
 
 ## Game Story / Description
 
