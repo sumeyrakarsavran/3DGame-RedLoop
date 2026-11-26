@@ -128,15 +128,19 @@ namespace RedLoop
             {
                 var h = NewImage("Heart" + i, _hud.transform, Red, _heartSprite);
                 _hearts[i] = h;
-                Place(h.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40 + i * 62, -36), new Vector2(54, 54));
-                h.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(2, -3);
+                // 10'arlı sıralar halinde küçük kalpler
+                int col = i % 10, row = i / 10;
+                Place(h.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(36 + col * 36, -32 - row * 36), new Vector2(32, 32));
+                h.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -2f);
             }
+            int heartRows = (_hearts.Length + 9) / 10;
+            float shardY = -32 - heartRows * 36 - 14;
 
             // Sol üst: zaman parçaları
             _shardIcon = NewImage("ShardIcon", _hud.transform, Gold, _diamondSprite);
-            Place(_shardIcon.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(44, -106), new Vector2(40, 40));
+            Place(_shardIcon.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, shardY), new Vector2(40, 40));
             _shardText = NewText("ShardText", _hud.transform, "0", 34, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);
-            Place(_shardText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(96, -100), new Vector2(400, 52));
+            Place(_shardText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(92, shardY + 6), new Vector2(400, 52));
             AddShadow(_shardText);
 
             // Sağ üst: görev
@@ -423,7 +427,7 @@ namespace RedLoop
                 _hearts[i].rectTransform.localScale = Vector3.one;
             }
             if (_pulseRoutine != null) { StopCoroutine(_pulseRoutine); _pulseRoutine = null; }
-            if (lives == 1) _pulseRoutine = StartCoroutine(PulseHeart(_hearts[0].rectTransform));
+            if (lives >= 1 && lives <= 3) _pulseRoutine = StartCoroutine(PulseHeart(_hearts[lives - 1].rectTransform));
         }
 
         public void SetShards(int levelTaken, int levelTotal, bool memories)

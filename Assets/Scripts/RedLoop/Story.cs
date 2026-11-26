@@ -39,7 +39,7 @@ namespace RedLoop
             "<b>Esc</b> — Duraklat\n" +
             "<b>Space / E / Tık</b> — Diyaloğu ilerlet\n\n" +
             "Robotlar atıştan önce kızarıp uğuldar: o an yer değiştir!\n" +
-            "Üç darbe alırsan döngü seni başa sarar. Pembe kalpler can verir.\n" +
+            "20 canın var; hepsi biterse döngü seni başa sarar. Pembe kalpler can verir.\n" +
             "Ekrandaki <color=#ffd36b>sarı elmas</color> işareti seni bir sonraki hedefe götürür.";
 
         public static string ChapterNumber(LevelKind k)
@@ -77,7 +77,7 @@ namespace RedLoop
                         new Line(Echo, "Döngü kendini onlarla bir arada tutuyor. Yeterince topla; merdivenin tepesindeki kapı ancak o zaman açılır."),
                         new Line(Ayla, "Ya muhafızlar?"),
                         new Line(Echo, "Onlar da bir zamanlar senin gibi kaçmaya çalıştı. Atmadan önce kızarıp uğuldarlar; o an yerinde durma."),
-                        new Line(Echo, "Yayın hâlâ elinde, Ayla. İki ok bir muhafızı devirir ve onu döngüden kurtarır. Üç darbe alırsan... her şey başa döner."),
+                        new Line(Echo, "Yayın hâlâ elinde, Ayla. İki ok bir muhafızı devirir ve onu döngüden kurtarır. Canın tükenirse... her şey başa döner."),
                     };
                 case LevelKind.Forest:
                     return new[]

@@ -14,7 +14,7 @@ namespace RedLoop
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance { get; private set; }
-        public const int MaxLives = 3;
+        public const int MaxLives = 20;
 
         // Düşmanlar vb. sadece oyun gerçekten oynanırken çalışsın diye.
         public static bool IsGameplayActive
@@ -379,7 +379,7 @@ namespace RedLoop
             }
 
             // Son canda kalp atışı
-            if (Lives == 1 && Time.unscaledTime >= _nextBeat)
+            if (Lives <= 3 && Lives > 0 && Time.unscaledTime >= _nextBeat)
             {
                 _nextBeat = Time.unscaledTime + 1.15f;
                 _sfx.Play(Sfx.Heartbeat, 0.5f);
