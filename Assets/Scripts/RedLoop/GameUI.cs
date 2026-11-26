@@ -63,20 +63,39 @@ namespace RedLoop
         private Image _victoryRed, _victoryDawn;
         private Text _victoryClock, _victoryStats;
 
+        private bool _built;
+
         private void Awake()
         {
-            _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            MakeSprites();
-            BuildCanvas();
-            BuildHud();
-            BuildOverlays();
-            BuildDialogue();
-            BuildTitle();
-            BuildPause();
-            BuildGameOver();
-            BuildVictory();
-            HideAllScreens();
-            SetHudVisible(false);
+            Build();
+        }
+
+        // BeforeSceneLoad sırasında eklenen bileşenlerde Unity Awake'i geciktirebiliyor;
+        // bu yüzden GameManager arayüzü kullanmadan önce bunu doğrudan çağırır.
+        public void Build()
+        {
+            if (_built) return;
+            _built = true;
+            try
+            {
+                _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                MakeSprites();
+                BuildCanvas();
+                BuildHud();
+                BuildOverlays();
+                BuildDialogue();
+                BuildTitle();
+                BuildPause();
+                BuildGameOver();
+                BuildVictory();
+                HideAllScreens();
+                SetHudVisible(false);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[RedLoop] GameUI.Build FAILED");
+                Debug.LogException(e);
+            }
         }
 
         // ================================================================ Kurulum
@@ -107,6 +126,7 @@ namespace RedLoop
             for (int i = 0; i < _hearts.Length; i++)
             {
                 var h = NewImage("Heart" + i, _hud.transform, Red, _heartSprite);
+                _hearts[i] = h;
                 Place(h.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40 + i * 62, -36), new Vector2(54, 54));
                 h.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(2, -3);
             }
@@ -366,6 +386,19 @@ namespace RedLoop
 
         public void SetLives(int lives)
         {
+            if (_hearts == null)
+            {
+                Debug.LogError("[RedLoop] SetLives: hearts null, built=" + _built + " id=" + GetInstanceID());
+                return;
+            }
+            for (int i = 0; i < _hearts.Length; i++)
+            {
+                if (_hearts[i] == null)
+                {
+                    Debug.LogError("[RedLoop] SetLives: heart " + i + " missing (destroyed=" + ReferenceEquals(_hearts[i], null) + ") canvas=" + (_canvas == null ? "gone" : "ok"));
+                    return;
+                }
+            }
             for (int i = 0; i < _hearts.Length; i++)
             {
                 bool full = i < lives;

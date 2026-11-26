@@ -95,6 +95,8 @@ namespace RedLoop
             Lives = MaxLives;
             _sfx = gameObject.AddComponent<SoundFX>();
             _ui = gameObject.AddComponent<GameUI>();
+            _sfx.Init();
+            _ui.Build();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 

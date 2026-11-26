@@ -37,8 +37,17 @@ namespace RedLoop
 
         public bool Muted { get; private set; }
 
+        private bool _initialized;
+
         private void Awake()
         {
+            Init();
+        }
+
+        public void Init()
+        {
+            if (_initialized) return;
+            _initialized = true;
             Instance = this;
             _pool = new AudioSource[12];
             for (int i = 0; i < _pool.Length; i++)
